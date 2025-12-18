@@ -147,6 +147,11 @@ public class StaffController {
             return;
         }
 
+        com.yurt.pattern.observer.NotificationService notifier = new com.yurt.pattern.observer.NotificationService();
+        selected.attach(notifier);
+
+        selected.setStatus(newStatus);
+
         String sql = "UPDATE requests SET status = ? WHERE id = ?";
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
