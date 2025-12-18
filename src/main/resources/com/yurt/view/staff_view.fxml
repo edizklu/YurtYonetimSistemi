@@ -2,12 +2,12 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.*?> <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.yurt.controller.StaffController"
-            prefWidth="900" prefHeight="600">
+            prefWidth="1000" prefHeight="700">
 
     <top>
         <HBox style="-fx-background-color: #4CAF50; -fx-padding: 15;">
@@ -19,6 +19,44 @@
 
     <center>
         <TabPane tabClosingPolicy="UNAVAILABLE">
+
+            <Tab text="Genel Bakış (Dashboard)">
+                <VBox spacing="20" style="-fx-padding: 20; -fx-background-color: #f5f5f5;">
+                    <HBox spacing="20" alignment="CENTER">
+                        <VBox alignment="CENTER" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);">
+                            <Label text="Toplam Öğrenci" style="-fx-font-size: 14px; -fx-text-fill: #757575;"/>
+                            <Label fx:id="lblTotalStudent" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox alignment="CENTER" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);">
+                            <Label text="Toplam Oda" style="-fx-font-size: 14px; -fx-text-fill: #757575;"/>
+                            <Label fx:id="lblTotalRoom" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox alignment="CENTER" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);">
+                            <Label text="Bekleyen İzinler" style="-fx-font-size: 14px; -fx-text-fill: #757575;"/>
+                            <Label fx:id="lblPendingRequests" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #FFA500;"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox spacing="20" VBox.vgrow="ALWAYS">
+                        <VBox style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 10;" HBox.hgrow="ALWAYS">
+                            <Label text="Yurt Doluluk Oranı" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                            <PieChart fx:id="occupancyChart" titleSide="BOTTOM"/>
+                        </VBox>
+
+                        <VBox style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 10;" HBox.hgrow="ALWAYS">
+                            <Label text="İzin Talebi İstatistikleri" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                            <BarChart fx:id="requestsChart">
+                                <xAxis>
+                                    <CategoryAxis label="Durum" />
+                                </xAxis>
+                                <yAxis>
+                                    <NumberAxis label="Sayı" />
+                                </yAxis>
+                            </BarChart>
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </Tab>
 
             <Tab text="İzin Talepleri (Onay Bekleyenler)">
                 <VBox spacing="10" style="-fx-padding: 20;">
@@ -46,7 +84,10 @@
                         <TextField fx:id="capacityField" promptText="Kapasite (Sayı)"/>
                         <TextField fx:id="typeField" promptText="Tip (Standart/Suit)"/>
                         <Button text="Odayı Kaydet" onAction="#handleAddRoom" maxWidth="Infinity" style="-fx-background-color: #2196F3; -fx-text-fill: white;"/>
+                        <Button text="Odayı Sil" onAction="#handleDeleteRoom" maxWidth="Infinity" style="-fx-background-color: red; -fx-text-fill: white;" />
+
                     </VBox>
+
                     <TableView fx:id="roomsTable" HBox.hgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colRoomNum" text="Oda No" prefWidth="100"/>
@@ -58,17 +99,64 @@
                 </HBox>
             </Tab>
 
-            <Tab text="Öğrenci Listesi">
-                <VBox style="-fx-padding: 20;">
-                    <TableView fx:id="studentsTable" VBox.vgrow="ALWAYS">
-                        <columns>
-                            <TableColumn fx:id="colStName" text="Ad" prefWidth="150"/>
-                            <TableColumn fx:id="colStSurname" text="Soyad" prefWidth="150"/>
-                            <TableColumn fx:id="colStTc" text="TC No" prefWidth="150"/>
-                            <TableColumn fx:id="colStRoom" text="Oda ID" prefWidth="100"/>
-                        </columns>
-                    </TableView>
-                </VBox>
+            <Tab text="Kat Planı (Görsel)" onSelectionChanged="#handleRefreshMap">
+                <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+                    <content>
+                        <TilePane fx:id="roomMapPane" hgap="20" vgap="20" prefColumns="4"
+                                  style="-fx-padding: 30; -fx-background-color: #f0f2f5;"/>
+                    </content>
+                </ScrollPane>
+            </Tab>
+
+            <Tab text="Öğrenci Yönetimi">
+                <HBox spacing="20" style="-fx-padding: 20;">
+                    <VBox spacing="10" minWidth="280" style="-fx-background-color: #f9f9f9; -fx-padding: 15; -fx-border-color: #ddd; -fx-border-radius: 5;">
+                        <Label text="Yeni Öğrenci Kaydı" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+                        <Separator/>
+
+                        <Label text="Kişisel Bilgiler"/>
+                        <TextField fx:id="stNameField" promptText="Ad"/>
+                        <TextField fx:id="stSurnameField" promptText="Soyad"/>
+                        <TextField fx:id="stTcField" promptText="TC Kimlik No"/>
+                        <TextField fx:id="stPhoneField" promptText="Telefon"/>
+
+                        <Separator/>
+
+                        <Label text="Giriş Bilgileri"/>
+                        <TextField fx:id="stUsernameField" promptText="Kullanıcı Adı (Giriş için)"/>
+                        <PasswordField fx:id="stPasswordField" promptText="Şifre"/>
+
+                        <Separator/>
+
+                        <Label text="Oda Seçimi"/>
+                        <ComboBox fx:id="roomComboBox" promptText="Boş Oda Seçiniz" maxWidth="Infinity"/>
+
+                        <Button text="Öğrenciyi Kaydet" onAction="#handleAddStudent"
+                                style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" maxWidth="Infinity"/>
+                    </VBox>
+
+                    <VBox HBox.hgrow="ALWAYS" spacing="10">
+                        <Label text="Kayıtlı Öğrenciler" style="-fx-font-weight: bold;"/>
+                        <TableView fx:id="studentsTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="colStName" text="Ad" prefWidth="120"/>
+                                <TableColumn fx:id="colStSurname" text="Soyad" prefWidth="120"/>
+                                <TableColumn fx:id="colStTc" text="TC No" prefWidth="120"/>
+                                <TableColumn fx:id="colStRoom" text="Oda No" prefWidth="80"/>
+                            </columns>
+                        </TableView>
+                        <HBox spacing="10">
+                            <Button text="Seçili Öğrenciyi Sil" onAction="#handleDeleteStudent"
+                                    style="-fx-background-color: #f44336; -fx-text-fill: white;" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+
+                            <Button text="Seçili Odaya Taşı" onAction="#handleMoveStudent"
+                                    style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold;" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <Label text="* Taşıma yapmak için: Listeden öğrenciyi seçin + Soldaki kutudan YENİ odayı seçin + Taşı'ya basın."
+                               style="-fx-font-size: 11px; -fx-text-fill: #666;" wrapText="true"/>
+                    </VBox>
+                </HBox>
             </Tab>
 
         </TabPane>

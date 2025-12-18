@@ -4,63 +4,95 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.shape.Line?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.yurt.controller.StudentController"
-            prefWidth="800" prefHeight="600">
+            prefWidth="900" prefHeight="600"
+            style="-fx-font-family: 'Segoe UI', sans-serif;">
 
     <top>
-        <HBox style="-fx-background-color: #2196F3; -fx-padding: 15;">
-            <Label fx:id="welcomeLabel" text="Hoşgeldiniz" textFill="white" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+        <HBox alignment="CENTER_LEFT" style="-fx-background-color: #2196F3; -fx-padding: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 2);">
+            <Label fx:id="welcomeLabel" text="Öğrenci Paneli" textFill="white" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
             <Region HBox.hgrow="ALWAYS" />
-            <Button text="Çıkış Yap" onAction="#handleLogout" style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+            <Button text="Güvenli Çıkış" onAction="#handleLogout"
+                    style="-fx-background-color: #1976D2; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;"/>
         </HBox>
     </top>
 
     <center>
-        <TabPane tabClosingPolicy="UNAVAILABLE">
-            <Tab text="Profil ve Oda Bilgileri">
-                <VBox spacing="20" style="-fx-padding: 20;">
-                    <TitledPane text="Kişisel Bilgiler" collapsible="false">
-                        <GridPane hgap="10" vgap="10">
-                            <Label text="Ad Soyad:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
-                            <Label fx:id="nameLabel" text="..." GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        <TabPane tabClosingPolicy="UNAVAILABLE" style="-fx-background-color: #f5f5f5;">
 
-                            <Label text="TC Kimlik:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
-                            <Label fx:id="tcLabel" text="..." GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            <Tab text="Profilim &amp; Odam">
+                <HBox spacing="20" style="-fx-padding: 30;" alignment="TOP_CENTER">
 
-                            <Label text="Oda Numarası:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
-                            <Label fx:id="roomLabel" text="..." GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);" minWidth="300">
+                        <Label text="KİŞİSEL BİLGİLER" style="-fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+                        <Line endX="250" stroke="#eeeeee"/>
+
+                        <GridPane hgap="10" vgap="15">
+                            <Label text="Ad:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
+                            <Label fx:id="nameLabel" text="..." GridPane.rowIndex="0" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
+
+                            <Label text="Soyad:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
+                            <Label fx:id="surnameLabel" text="..." GridPane.rowIndex="1" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
+
+                            <Label text="TC Kimlik:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
+                            <Label fx:id="tcLabel" text="..." GridPane.rowIndex="2" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
+
+                            <Label text="Telefon:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
+                            <Label fx:id="phoneLabel" text="..." GridPane.rowIndex="3" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
                         </GridPane>
-                    </TitledPane>
+                    </VBox>
 
-                    <TitledPane text="Oda Arkadaşları" collapsible="false" VBox.vgrow="ALWAYS">
-                        <ListView fx:id="roommateList"/>
-                    </TitledPane>
-                </VBox>
+                    <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);" HBox.hgrow="ALWAYS">
+                        <Label text="ODA BİLGİLERİ" style="-fx-text-fill: #4CAF50; -fx-font-weight: bold; -fx-font-size: 14px;"/>
+                        <Line endX="400" stroke="#eeeeee"/>
+
+                        <HBox spacing="30">
+                            <VBox>
+                                <Label text="Oda Numaranız" style="-fx-font-size: 12px; -fx-text-fill: #757575;"/>
+                                <Label fx:id="roomNumberLabel" text="..." style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #333;"/>
+                            </VBox>
+                            <VBox>
+                                <Label text="Oda Tipi" style="-fx-font-size: 12px; -fx-text-fill: #757575;"/>
+                                <Label fx:id="roomTypeLabel" text="..." style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-padding: 8 0 0 0;"/>
+                            </VBox>
+                        </HBox>
+
+                        <Label text="Oda Arkadaşlarınız" style="-fx-font-weight: bold; -fx-padding: 10 0 0 0;"/>
+                        <ListView fx:id="roommateList" VBox.vgrow="ALWAYS" style="-fx-background-insets: 0; -fx-padding: 5; -fx-border-color: #eee;"/>
+                    </VBox>
+                </HBox>
             </Tab>
 
-            <Tab text="İzin Talepleri">
-                <VBox spacing="15" style="-fx-padding: 20;">
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <DatePicker fx:id="startDate" promptText="Başlangıç Tarihi"/>
-                        <DatePicker fx:id="endDate" promptText="Bitiş Tarihi"/>
-                        <TextField fx:id="reasonField" promptText="İzin Nedeni" HBox.hgrow="ALWAYS"/>
-                        <Button text="Talep Oluştur" onAction="#handleCreateRequest" style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+            <Tab text="İzin İşlemleri">
+                <VBox spacing="20" style="-fx-padding: 30;">
+
+                    <HBox spacing="15" alignment="CENTER_LEFT" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);">
+                        <Label text="Yeni Talep:" style="-fx-font-weight: bold;"/>
+                        <DatePicker fx:id="startDate" promptText="Başlangıç" prefWidth="150"/>
+                        <DatePicker fx:id="endDate" promptText="Bitiş" prefWidth="150"/>
+                        <TextField fx:id="reasonField" promptText="İzin nedeniniz..." HBox.hgrow="ALWAYS"/>
+                        <Button text="GÖNDER" onAction="#handleCreateRequest"
+                                style="-fx-background-color: #FF9800; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
                     </HBox>
 
-                    <Label text="Geçmiş İzin Taleplerim" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
-                    <TableView fx:id="permissionsTable" VBox.vgrow="ALWAYS">
-                        <columns>
-                            <TableColumn fx:id="colStart" text="Başlangıç" prefWidth="150"/>
-                            <TableColumn fx:id="colEnd" text="Bitiş" prefWidth="150"/>
-                            <TableColumn fx:id="colReason" text="Neden" prefWidth="250"/>
-                            <TableColumn fx:id="colStatus" text="Durum" prefWidth="100"/>
-                        </columns>
-                    </TableView>
+                    <VBox VBox.vgrow="ALWAYS" spacing="10">
+                        <Label text="Geçmiş İzinleriniz" style="-fx-font-weight: bold; -fx-text-fill: #666;"/>
+                        <TableView fx:id="permissionsTable" VBox.vgrow="ALWAYS" style="-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 0);">
+                            <columns>
+                                <TableColumn fx:id="colStart" text="Başlangıç" prefWidth="150"/>
+                                <TableColumn fx:id="colEnd" text="Bitiş" prefWidth="150"/>
+                                <TableColumn fx:id="colReason" text="Neden" prefWidth="300"/>
+                                <TableColumn fx:id="colStatus" text="Durum" prefWidth="150"/>
+                            </columns>
+                        </TableView>
+                    </VBox>
                 </VBox>
             </Tab>
+
         </TabPane>
     </center>
 </BorderPane>

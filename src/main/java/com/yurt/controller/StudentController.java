@@ -22,8 +22,12 @@ public class StudentController {
 
     @FXML private Label welcomeLabel;
     @FXML private Label nameLabel;
+    @FXML private Label surnameLabel;
     @FXML private Label tcLabel;
-    @FXML private Label roomLabel;
+    @FXML private Label phoneLabel;
+
+    @FXML private Label roomNumberLabel;
+    @FXML private Label roomTypeLabel;
     @FXML private ListView<String> roommateList;
 
     @FXML private DatePicker startDate;
@@ -36,6 +40,7 @@ public class StudentController {
     @FXML private TableColumn<LeaveRequest, String> colStatus;
 
     private Student currentStudent;
+    private int realStudentId;
     private ObservableList<LeaveRequest> requestList = FXCollections.observableArrayList();
 
     @FXML
@@ -44,47 +49,109 @@ public class StudentController {
         colEnd.setCellValueFactory(new PropertyValueFactory<>("endDate"));
         colReason.setCellValueFactory(new PropertyValueFactory<>("reason"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-
         permissionsTable.setItems(requestList);
     }
 
     public void setStudentData(Student student) {
         this.currentStudent = student;
-        welcomeLabel.setText("Hoşgeldin, " + student.getName());
-        nameLabel.setText(student.getName() + " " + student.getSurname());
-        tcLabel.setText("11*******");
 
-        loadRoomInfo();
-        loadLeaveRequests();
+        loadStudentProfileByUserId(student.getId());
     }
 
-    private void loadRoomInfo() {
-        roomLabel.setText("Henüz atanmadı");
-    }
-
-    private void loadLeaveRequests() {
-        requestList.clear();
-        String sql = "SELECT * FROM requests WHERE student_id = ?";
+    private void loadStudentProfileByUserId(int userId) {
+        String sql = "SELECT s.id, s.name, s.surname, s.tc_no, s.phone, r.room_number, r.type, r.id as room_id " +
+                "FROM students s " +
+                "LEFT JOIN rooms r ON s.room_id = r.id " +
+                "WHERE s.user_id = ?";
 
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, getStudentDbId());
-
+            stmt.setInt(1, userId);
             ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                requestList.add(new LeaveRequest(
-                        rs.getInt("id"),
-                        rs.getInt("student_id"),
-                        rs.getString("start_date"),
-                        rs.getString("end_date"),
-                        rs.getString("reason"),
-                        rs.getString("status")
-                ));
+
+            if (rs.next()) {
+                this.realStudentId = rs.getInt("id");
+
+                String name = rs.getString("name");
+                String surname = rs.getString("surname");
+
+                welcomeLabel.setText("Merhaba, " + name);
+                nameLabel.setText(name);
+                surnameLabel.setText(surname);
+                tcLabel.setText(rs.getString("tc_no"));
+
+                String phone = rs.getString("phone");
+                phoneLabel.setText((phone != null && !phone.isEmpty()) ? phone : "-");
+
+                String roomNum = rs.getString("room_number");
+                if (roomNum != null) {
+                    roomNumberLabel.setText(roomNum);
+                    roomTypeLabel.setText(rs.getString("type"));
+
+                    loadRoommates(rs.getInt("room_id"), this.realStudentId);
+                } else {
+                    roomNumberLabel.setText("Atanmadı");
+                    roomTypeLabel.setText("-");
+                    roommateList.getItems().clear();
+                    roommateList.getItems().add("Henüz bir odaya yerleşmediniz.");
+                }
+
+                loadLeaveRequests();
+
+            } else {
+                welcomeLabel.setText("Profil Bulunamadı");
+                nameLabel.setText("Hata: Öğrenci kaydı eksik.");
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void loadRoommates(int roomId, int myStudentId) {
+        roommateList.getItems().clear();
+        String sql = "SELECT name, surname FROM students WHERE room_id = ? AND id != ?";
+
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, roomId);
+            stmt.setInt(2, myStudentId);
+            ResultSet rs = stmt.executeQuery();
+
+            boolean found = false;
+            while (rs.next()) {
+                found = true;
+                roommateList.getItems().add(rs.getString("name") + " " + rs.getString("surname"));
+            }
+
+            if (!found) {
+                roommateList.getItems().add("Bu odada şu an tek kalıyorsunuz.");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadLeaveRequests() {
+        requestList.clear();
+        // user_id ile değil, gerçek student_id ile sorgu yapıyoruz
+        String sql = "SELECT * FROM requests WHERE student_id = ?";
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, this.realStudentId); // DÜZELTİLDİ
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                requestList.add(new LeaveRequest(
+                        rs.getInt("id"), rs.getInt("student_id"),
+                        rs.getString("start_date"), rs.getString("end_date"),
+                        rs.getString("reason"), rs.getString("status")
+                ));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     @FXML
@@ -94,48 +161,32 @@ public class StudentController {
         String reason = reasonField.getText();
 
         if (start == null || end == null || reason.isEmpty()) {
-            showAlert("Hata", "Lütfen tüm alanları doldurunuz.");
+            showAlert("Uyarı", "Lütfen tarih ve neden giriniz.");
             return;
         }
 
         String sql = "INSERT INTO requests (student_id, start_date, end_date, reason, status) VALUES (?, ?, ?, ?, 'Beklemede')";
-
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, getStudentDbId());
+            stmt.setInt(1, this.realStudentId); // DÜZELTİLDİ
             stmt.setString(2, start.toString());
             stmt.setString(3, end.toString());
             stmt.setString(4, reason);
             stmt.executeUpdate();
 
-            showAlert("Başarılı", "İzin talebiniz oluşturuldu!");
-
-            startDate.setValue(null);
-            endDate.setValue(null);
-            reasonField.clear();
+            showAlert("Başarılı", "İzin talebi gönderildi.");
+            startDate.setValue(null); endDate.setValue(null); reasonField.clear();
             loadLeaveRequests();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            showAlert("Hata", "Veritabanı hatası: " + e.getMessage());
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    private int getStudentDbId() throws SQLException {
-        Connection conn = DatabaseConnection.getInstance().getConnection();
-        PreparedStatement stmt = conn.prepareStatement("SELECT id FROM students WHERE user_id = ?");
-        stmt.setInt(1, currentStudent.getId());
-        ResultSet rs = stmt.executeQuery();
-        if (rs.next()) return rs.getInt("id");
-        return 0;
-    }
-
-    private void showAlert(String title, String message) {
+    private void showAlert(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
-        alert.setContentText(message);
+        alert.setContentText(msg);
         alert.showAndWait();
     }
 

@@ -20,5 +20,10 @@ public class Student extends User {
     }
 
     public String getName() { return name; }
+
     public String getSurname() { return surname; }
+
+    public String getTcNo() { return tcNo; }
+
+    public int getRoomId() { return roomId; }
 }

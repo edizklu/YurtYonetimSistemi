@@ -11,8 +11,13 @@ public abstract class User {
         this.password = password;
     }
 
-    public abstract String getRole();
+    public int getId() {
+        return id;
+    }
 
-    public int getId() { return id; }
-    public String getUsername() { return username; }
+    public String getUsername() {
+        return username;
+    }
+
+    public abstract String getRole();
 }
