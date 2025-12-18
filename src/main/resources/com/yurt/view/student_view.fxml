@@ -2,8 +2,6 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.text.Text?>
 <?import javafx.scene.shape.Line?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
@@ -27,11 +25,11 @@
             <Tab text="Profilim &amp; Odam">
                 <HBox spacing="20" style="-fx-padding: 30;" alignment="TOP_CENTER">
 
-                    <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);" minWidth="300">
+                    <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);" minWidth="350">
                         <Label text="KİŞİSEL BİLGİLER" style="-fx-text-fill: #2196F3; -fx-font-weight: bold; -fx-font-size: 14px;"/>
-                        <Line endX="250" stroke="#eeeeee"/>
+                        <Line endX="300" stroke="#eeeeee"/>
 
-                        <GridPane hgap="10" vgap="15">
+                        <GridPane hgap="10" vgap="20">
                             <Label text="Ad:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
                             <Label fx:id="nameLabel" text="..." GridPane.rowIndex="0" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
 
@@ -42,7 +40,11 @@
                             <Label fx:id="tcLabel" text="..." GridPane.rowIndex="2" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
 
                             <Label text="Telefon:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-text-fill: #757575;"/>
-                            <Label fx:id="phoneLabel" text="..." GridPane.rowIndex="3" GridPane.columnIndex="1" style="-fx-font-weight: bold;"/>
+
+                            <HBox spacing="10" GridPane.rowIndex="3" GridPane.columnIndex="1" alignment="CENTER_LEFT">
+                                <TextField fx:id="phoneField" promptText="05XX..." style="-fx-pref-width: 120;"/>
+                                <Button text="Güncelle" onAction="#handleUpdateProfile" style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-size: 10px; -fx-cursor: hand;"/>
+                            </HBox>
                         </GridPane>
                     </VBox>
 

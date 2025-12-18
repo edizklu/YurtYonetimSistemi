@@ -138,6 +138,7 @@
 
                     <VBox HBox.hgrow="ALWAYS" spacing="10">
                         <Label text="Kayıtlı Öğrenciler" style="-fx-font-weight: bold;"/>
+                        <TextField fx:id="searchField" promptText="Öğrenci Ara (Ad, Soyad veya TC ile)..." style="-fx-padding: 8; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #ddd;"/>
                         <TableView fx:id="studentsTable" VBox.vgrow="ALWAYS">
                             <columns>
                                 <TableColumn fx:id="colStName" text="Ad" prefWidth="120"/>

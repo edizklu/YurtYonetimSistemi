@@ -7,14 +7,16 @@ import com.yurt.model.Staff;
 import com.yurt.model.Student;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
-import javafx.scene.chart.*;
 import javafx.scene.layout.TilePane;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -25,6 +27,12 @@ import java.sql.SQLException;
 public class StaffController {
 
     @FXML private Label welcomeLabel;
+
+    @FXML private Label lblTotalStudent;
+    @FXML private Label lblTotalRoom;
+    @FXML private Label lblPendingRequests;
+    @FXML private PieChart occupancyChart;
+    @FXML private BarChart<String, Number> requestsChart;
 
     @FXML private TableView<LeaveRequest> requestsTable;
     @FXML private TableColumn<LeaveRequest, Integer> colReqStudent;
@@ -42,12 +50,7 @@ public class StaffController {
     @FXML private TableColumn<Room, Integer> colCount;
     @FXML private TableColumn<Room, String> colType;
 
-    @FXML private Label lblTotalStudent;
-    @FXML private Label lblTotalRoom;
-    @FXML private Label lblPendingRequests;
-    @FXML private PieChart occupancyChart;
-    @FXML private BarChart<String, Number> requestsChart;
-
+    @FXML private TextField searchField;
     @FXML private TableView<Student> studentsTable;
     @FXML private TableColumn<Student, String> colStName;
     @FXML private TableColumn<Student, String> colStSurname;
@@ -64,7 +67,6 @@ public class StaffController {
 
     @FXML private TilePane roomMapPane;
 
-
     private Staff currentStaff;
     private ObservableList<LeaveRequest> pendingRequests = FXCollections.observableArrayList();
     private ObservableList<Room> roomsList = FXCollections.observableArrayList();
@@ -78,7 +80,6 @@ public class StaffController {
 
     @FXML
     public void initialize() {
-
         colReqStudent.setCellValueFactory(new PropertyValueFactory<>("studentId"));
         colReqStart.setCellValueFactory(new PropertyValueFactory<>("startDate"));
         colReqEnd.setCellValueFactory(new PropertyValueFactory<>("endDate"));
@@ -96,21 +97,30 @@ public class StaffController {
         colStSurname.setCellValueFactory(new PropertyValueFactory<>("surname"));
         colStTc.setCellValueFactory(new PropertyValueFactory<>("tcNo"));
         colStRoom.setCellValueFactory(new PropertyValueFactory<>("roomId"));
-        studentsTable.setItems(studentsList);
+
+        FilteredList<Student> filteredData = new FilteredList<>(studentsList, b -> true);
+
+        if (searchField != null) {
+            searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(student -> {
+                    if (newValue == null || newValue.isEmpty()) return true;
+
+                    String lowerCaseFilter = newValue.toLowerCase();
+
+                    if (student.getName().toLowerCase().contains(lowerCaseFilter)) return true;
+                    if (student.getSurname().toLowerCase().contains(lowerCaseFilter)) return true;
+                    if (student.getTcNo().contains(lowerCaseFilter)) return true;
+
+                    return false;
+                });
+            });
+        }
+
+        SortedList<Student> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(studentsTable.comparatorProperty());
+        studentsTable.setItems(sortedData);
 
         loadAvailableRooms();
-    }
-
-    private void loadAvailableRooms() {
-        roomComboBox.getItems().clear();
-        String sql = "SELECT room_number FROM rooms WHERE current_count < capacity"; // Sadece boş yeri olanlar
-        try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            ResultSet rs = conn.createStatement().executeQuery(sql);
-            while (rs.next()) {
-                roomComboBox.getItems().add(rs.getString("room_number"));
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     private void loadAllData() {
@@ -119,7 +129,12 @@ public class StaffController {
         loadRooms();
         loadStudents();
         loadVisualMap();
+    }
 
+    @FXML
+    private void handleRefreshMap() {
+        loadVisualMap();
+        loadAvailableRooms();
     }
 
     private void loadDashboardData() {
@@ -141,7 +156,6 @@ public class StaffController {
                 int totalCap = rsPie.getInt(1);
                 int used = rsPie.getInt(2);
                 int empty = totalCap - used;
-
                 ObservableList<PieChart.Data> pieData = FXCollections.observableArrayList(
                         new PieChart.Data("Dolu (" + used + ")", used),
                         new PieChart.Data("Boş (" + empty + ")", empty)
@@ -151,19 +165,14 @@ public class StaffController {
 
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             series.setName("Talepler");
-
             ResultSet rsBar = conn.createStatement().executeQuery("SELECT status, COUNT(*) FROM requests GROUP BY status");
             while (rsBar.next()) {
-                String status = rsBar.getString(1);
-                int count = rsBar.getInt(2);
-                series.getData().add(new XYChart.Data<>(status, count));
+                series.getData().add(new XYChart.Data<>(rsBar.getString(1), rsBar.getInt(2)));
             }
             requestsChart.getData().clear();
             requestsChart.getData().add(series);
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
     private void loadPendingRequests() {
@@ -196,10 +205,37 @@ public class StaffController {
         } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    private void loadVisualMap() {
-        if (roomMapPane == null) return; // Eğer sekme yüklenmediyse hata vermesin
+    private void loadStudents() {
+        studentsList.clear();
+        String sql = "SELECT * FROM students";
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+            while (rs.next()) {
+                studentsList.add(new Student(
+                        rs.getInt("id"), "", "",
+                        rs.getString("name"), rs.getString("surname"),
+                        rs.getString("tc_no"), rs.getInt("room_id")));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
 
-        roomMapPane.getChildren().clear(); // Önce temizle
+    private void loadAvailableRooms() {
+        roomComboBox.getItems().clear();
+        String sql = "SELECT room_number FROM rooms WHERE current_count < capacity ORDER BY room_number ASC";
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            ResultSet rs = conn.createStatement().executeQuery(sql);
+            while (rs.next()) {
+                roomComboBox.getItems().add(rs.getString("room_number"));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private void loadVisualMap() {
+        if (roomMapPane == null) return;
+
+        roomMapPane.getChildren().clear();
 
         String sql = "SELECT * FROM rooms ORDER BY room_number ASC";
         try {
@@ -226,36 +262,8 @@ public class StaffController {
                 );
 
                 roomBtn.setOnAction(e -> showRoomDetails(id, num));
-
                 roomMapPane.getChildren().add(roomBtn);
             }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @FXML
-    private void handleRefreshMap() {
-        loadVisualMap();
-        loadAvailableRooms();
-    }
-
-    @FXML
-    private void handleDeleteRoom() {
-        Room selected = roomsTable.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
-
-        if (selected.getCurrentCount() > 0) {
-            showAlert("Hata", "İçinde öğrenci olan oda silinemez! Önce öğrencileri taşıyın veya silin.");
-            return;
-        }
-
-        try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            conn.createStatement().executeUpdate("DELETE FROM rooms WHERE id = " + selected.getId());
-            loadAllData();
-            showAlert("Başarılı", "Oda silindi.");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -264,7 +272,6 @@ public class StaffController {
     private void showRoomDetails(int roomId, String roomNum) {
         StringBuilder content = new StringBuilder();
         String sql = "SELECT name, surname FROM students WHERE room_id = ?";
-
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
@@ -277,14 +284,11 @@ public class StaffController {
                 content.append("• ").append(rs.getString("name"))
                         .append(" ").append(rs.getString("surname")).append("\n");
             }
-
             if (!hasStudent) content.append("Bu oda şu an boş.");
-
         } catch (SQLException e) {
             e.printStackTrace();
             content.append("Veri çekilemedi.");
         }
-
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Oda Detayı");
         alert.setHeaderText(roomNum + " Nolu Oda Bilgisi");
@@ -292,96 +296,8 @@ public class StaffController {
         alert.showAndWait();
     }
 
-    private void loadStudents() {
-        studentsList.clear();
-        String sql = "SELECT * FROM students";
-        try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            ResultSet rs = conn.createStatement().executeQuery(sql);
-
-            while (rs.next()) {
-                int dbId = rs.getInt("id");
-                String name = rs.getString("name");
-
-                System.out.println("DEBUG: Listeye ekleniyor -> İsim: " + name + " | ID: " + dbId);
-
-                studentsList.add(new Student(
-                        dbId, "", "",
-                        name, rs.getString("surname"),
-                        rs.getString("tc_no"), rs.getInt("room_id")));
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    @FXML
-    private void handleApprove() {
-        processRequest("Onaylandı");
-    }
-
-    @FXML
-    private void handleReject() {
-        processRequest("Reddedildi");
-    }
-
-    private void processRequest(String newStatus) {
-        LeaveRequest selected = requestsTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showAlert("Uyarı", "Lütfen bir talep seçiniz.");
-            return;
-        }
-
-        com.yurt.pattern.observer.NotificationService notifier = new com.yurt.pattern.observer.NotificationService();
-        selected.attach(notifier);
-
-        selected.setStatus(newStatus);
-
-        String sql = "UPDATE requests SET status = ? WHERE id = ?";
-        try {
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, newStatus);
-            stmt.setInt(2, selected.getId());
-            stmt.executeUpdate();
-
-            loadPendingRequests();
-            showAlert("Bilgi", "Talep durumu güncellendi: " + newStatus);
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    @FXML
-    private void handleAddRoom() {
-        String num = roomNumberField.getText();
-        String capStr = capacityField.getText();
-        String type = typeField.getText();
-
-        if (num.isEmpty() || capStr.isEmpty()) {
-            showAlert("Hata", "Oda numarası ve kapasite zorunludur.");
-            return;
-        }
-
-        try {
-            int cap = Integer.parseInt(capStr);
-            String sql = "INSERT INTO rooms (room_number, capacity, type) VALUES (?, ?, ?)";
-            Connection conn = DatabaseConnection.getInstance().getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, num);
-            stmt.setInt(2, cap);
-            stmt.setString(3, type);
-            stmt.executeUpdate();
-
-            roomNumberField.clear();
-            capacityField.clear();
-            typeField.clear();
-            loadRooms();
-            showAlert("Başarılı", "Yeni oda eklendi.");
-        } catch (Exception e) {
-            showAlert("Hata", "Oda eklenemedi: " + e.getMessage());
-        }
-    }
-
     @FXML
     private void handleAddStudent() {
-        // 1. Form Doğrulama
         if (stNameField.getText().isEmpty() || stUsernameField.getText().isEmpty() ||
                 stPasswordField.getText().isEmpty() || roomComboBox.getValue() == null) {
             showAlert("Hata", "Lütfen tüm alanları doldurunuz ve bir oda seçiniz.");
@@ -435,18 +351,15 @@ public class StaffController {
             conn.commit();
             conn.setAutoCommit(true);
 
-            showAlert("Başarılı", "Öğrenci başarıyla kaydedildi ve odaya yerleştirildi.");
-
+            showAlert("Başarılı", "Öğrenci kaydedildi.");
             clearForm();
-            loadStudents();
-            loadDashboardData();
-            loadRooms();
+            loadAllData();
             loadAvailableRooms();
 
         } catch (SQLException e) {
             try { if(conn != null) conn.rollback(); } catch (SQLException ex) {}
             e.printStackTrace();
-            showAlert("Hata", "Kayıt başarısız: " + e.getMessage());
+            showAlert("Hata", "Kayıt hatası: " + e.getMessage());
         }
     }
 
@@ -460,7 +373,7 @@ public class StaffController {
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Silme Onayı");
-        alert.setContentText(selected.getName() + " silinecek. Emin misiniz?");
+        alert.setContentText(selected.getName() + " adlı öğrenciyi silmek istediğinize emin misiniz?");
         if (alert.showAndWait().get() != ButtonType.OK) return;
 
         Connection conn = null;
@@ -493,10 +406,6 @@ public class StaffController {
     @FXML
     private void handleMoveStudent() {
         Student selectedStudent = studentsTable.getSelectionModel().getSelectedItem();
-        if (selectedStudent != null) {
-            System.out.println("DEBUG: Seçilen Öğrenci ID: " + selectedStudent.getId());
-        }
-
         String newRoomNum = roomComboBox.getValue();
 
         if (selectedStudent == null) {
@@ -511,9 +420,8 @@ public class StaffController {
         Connection conn = null;
         try {
             conn = DatabaseConnection.getInstance().getConnection();
-            conn.setAutoCommit(false); // TRANSACTION BAŞLAT
+            conn.setAutoCommit(false);
 
-            // 1. YENİ ODAYI BUL VE KAPASİTE KONTROL ET
             int newRoomId = 0;
             PreparedStatement newRoomStmt = conn.prepareStatement("SELECT id, capacity, current_count FROM rooms WHERE room_number = ?");
             newRoomStmt.setString(1, newRoomNum);
@@ -530,38 +438,32 @@ public class StaffController {
                 conn.rollback(); return;
             }
 
-            // Öğrenci zaten oradaysa dur
             if (selectedStudent.getRoomId() == newRoomId) {
                 showAlert("Bilgi", "Öğrenci zaten bu odada.");
                 conn.rollback(); return;
             }
 
-            // 2. ÖĞRENCİYİ GÜNCELLE (Kritik Nokta: Önce öğrenciyi taşımayı dene)
             String updateStudentSql = "UPDATE students SET room_id = ? WHERE id = ?";
             PreparedStatement stStmt = conn.prepareStatement(updateStudentSql);
             stStmt.setInt(1, newRoomId);
             stStmt.setInt(2, selectedStudent.getId());
 
-            int affectedRows = stStmt.executeUpdate(); // Güncellenen satır sayısı
+            int affectedRows = stStmt.executeUpdate();
 
-            // EĞER HİÇBİR SATIR GÜNCELLENMEDİYSE (Öğrenci bulunamadıysa)
             if (affectedRows == 0) {
                 throw new SQLException("Öğrenci veritabanında bulunamadı veya güncellenemedi. İşlem iptal ediliyor.");
             }
 
-            // 3. ESKİ ODA SAYISINI DÜŞÜR
             String oldRoomSql = "UPDATE rooms SET current_count = current_count - 1 WHERE id = ?";
             PreparedStatement oldStmt = conn.prepareStatement(oldRoomSql);
             oldStmt.setInt(1, selectedStudent.getRoomId());
             oldStmt.executeUpdate();
 
-            // 4. YENİ ODA SAYISINI ARTIR
             String newRoomUpdateSql = "UPDATE rooms SET current_count = current_count + 1 WHERE id = ?";
             PreparedStatement newStmt = conn.prepareStatement(newRoomUpdateSql);
             newStmt.setInt(1, newRoomId);
             newStmt.executeUpdate();
 
-            // 5. HER ŞEY YOLUNDAYSA ONAYLA
             conn.commit();
             conn.setAutoCommit(true);
 
@@ -572,7 +474,7 @@ public class StaffController {
             loadVisualMap();
 
         } catch (SQLException e) {
-            try { if(conn!=null) conn.rollback(); } catch (SQLException ex) {} // Hata anında her şeyi geri al
+            try { if(conn!=null) conn.rollback(); } catch (SQLException ex) {}
             e.printStackTrace();
             showAlert("Kritik Hata", "İşlem başarısız: " + e.getMessage());
         }
@@ -584,12 +486,91 @@ public class StaffController {
         roomComboBox.getSelectionModel().clearSelection();
     }
 
-    private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+    @FXML
+    private void handleApprove() {
+        processRequest("Onaylandı");
+    }
+
+    @FXML
+    private void handleReject() {
+        processRequest("Reddedildi");
+    }
+
+    private void processRequest(String newStatus) {
+        LeaveRequest selected = requestsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Uyarı", "Lütfen bir talep seçiniz.");
+            return;
+        }
+
+        com.yurt.pattern.observer.NotificationService notifier = new com.yurt.pattern.observer.NotificationService();
+        selected.attach(notifier);
+        selected.setStatus(newStatus);
+
+        String sql = "UPDATE requests SET status = ? WHERE id = ?";
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, newStatus);
+            stmt.setInt(2, selected.getId());
+            stmt.executeUpdate();
+
+            loadPendingRequests();
+            loadDashboardData();
+            showAlert("Bilgi", "Talep durumu: " + newStatus);
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    @FXML
+    private void handleAddRoom() {
+        String num = roomNumberField.getText();
+        String capStr = capacityField.getText();
+        String type = typeField.getText();
+
+        if (num.isEmpty() || capStr.isEmpty()) {
+            showAlert("Hata", "Oda no ve kapasite giriniz.");
+            return;
+        }
+
+        try {
+            int cap = Integer.parseInt(capStr);
+            String sql = "INSERT INTO rooms (room_number, capacity, type) VALUES (?, ?, ?)";
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, num);
+            stmt.setInt(2, cap);
+            stmt.setString(3, type);
+            stmt.executeUpdate();
+
+            roomNumberField.clear();
+            capacityField.clear();
+            typeField.clear();
+            loadAllData();
+            loadAvailableRooms();
+            showAlert("Başarılı", "Oda eklendi.");
+        } catch (Exception e) {
+            showAlert("Hata", e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleDeleteRoom() {
+        Room selected = roomsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        if (selected.getCurrentCount() > 0) {
+            showAlert("Hata", "İçinde öğrenci olan oda silinemez! Önce öğrencileri taşıyın veya silin.");
+            return;
+        }
+
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            conn.createStatement().executeUpdate("DELETE FROM rooms WHERE id = " + selected.getId());
+            loadAllData();
+            showAlert("Başarılı", "Oda silindi.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -598,5 +579,13 @@ public class StaffController {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/yurt/view/login.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), 400, 300);
         stage.setScene(scene);
+    }
+
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 }

@@ -24,7 +24,8 @@ public class StudentController {
     @FXML private Label nameLabel;
     @FXML private Label surnameLabel;
     @FXML private Label tcLabel;
-    @FXML private Label phoneLabel;
+
+    @FXML private TextField phoneField;
 
     @FXML private Label roomNumberLabel;
     @FXML private Label roomTypeLabel;
@@ -54,7 +55,6 @@ public class StudentController {
 
     public void setStudentData(Student student) {
         this.currentStudent = student;
-
         loadStudentProfileByUserId(student.getId());
     }
 
@@ -82,7 +82,7 @@ public class StudentController {
                 tcLabel.setText(rs.getString("tc_no"));
 
                 String phone = rs.getString("phone");
-                phoneLabel.setText((phone != null && !phone.isEmpty()) ? phone : "-");
+                phoneField.setText((phone != null) ? phone : "");
 
                 String roomNum = rs.getString("room_number");
                 if (roomNum != null) {
@@ -137,12 +137,11 @@ public class StudentController {
 
     private void loadLeaveRequests() {
         requestList.clear();
-        // user_id ile değil, gerçek student_id ile sorgu yapıyoruz
         String sql = "SELECT * FROM requests WHERE student_id = ?";
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, this.realStudentId); // DÜZELTİLDİ
+            stmt.setInt(1, this.realStudentId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 requestList.add(new LeaveRequest(
@@ -152,6 +151,34 @@ public class StudentController {
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    @FXML
+    private void handleUpdateProfile() {
+        String newPhone = phoneField.getText();
+        if (newPhone == null || newPhone.trim().isEmpty()) {
+            showAlert("Uyarı", "Telefon numarası boş olamaz.");
+            return;
+        }
+
+        String sql = "UPDATE students SET phone = ? WHERE id = ?";
+        try {
+            Connection conn = DatabaseConnection.getInstance().getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, newPhone);
+            stmt.setInt(2, this.realStudentId);
+
+            int affected = stmt.executeUpdate();
+            if (affected > 0) {
+                showAlert("Başarılı", "Telefon numarası güncellendi.");
+            } else {
+                showAlert("Hata", "Güncelleme başarısız.");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Hata", "Veritabanı hatası: " + e.getMessage());
+        }
     }
 
     @FXML
@@ -169,7 +196,7 @@ public class StudentController {
         try {
             Connection conn = DatabaseConnection.getInstance().getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, this.realStudentId); // DÜZELTİLDİ
+            stmt.setInt(1, this.realStudentId);
             stmt.setString(2, start.toString());
             stmt.setString(3, end.toString());
             stmt.setString(4, reason);
