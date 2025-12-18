@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.text.Text?>
+
+<VBox alignment="CENTER" spacing="15" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.yurt.controller.LoginController"
+      style="-fx-background-color: #f4f4f4;">
+
+    <padding><Insets top="20" right="40" bottom="20" left="40"/></padding>
+
+    <Text text="YURT YÖNETİM SİSTEMİ" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <TextField fx:id="usernameField" promptText="Kullanıcı Adı"/>
+    <PasswordField fx:id="passwordField" promptText="Şifre"/>
+
+    <Label fx:id="errorLabel" textFill="red"/>
+
+    <Button text="GİRİŞ YAP" onAction="#handleLogin"
+            style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"/>
+</VBox>
