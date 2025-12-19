@@ -57,7 +57,7 @@ Proje, kodun okunabilirliğini ve bakımını kolaylaştırmak için 3 ana katma
 
 | Oda Haritası | Öğrenci Paneli |
 | :---: | :---: |
-| <img src="screenshots/map.png" width="400"> | <img src="screenshots/student.png" width="400"> |
+| <img src="screenshots/roommap.png" width="400"> | <img src="screenshots/student.png" width="400"> |
 
 *(Not: Görsellerin görünmesi için proje dizininde screenshots adında bir klasör oluşturup ilgili resimleri ekleyiniz.)*
 
