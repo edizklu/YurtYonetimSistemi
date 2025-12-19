@@ -373,13 +373,22 @@ public class StaffController {
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Silme Onayı");
-        alert.setContentText(selected.getName() + " adlı öğrenciyi silmek istediğinize emin misiniz?");
+        alert.setContentText(selected.getName() + " adlı öğrenciyi ve kullanıcı hesabını silmek istediğinize emin misiniz?");
         if (alert.showAndWait().get() != ButtonType.OK) return;
 
         Connection conn = null;
         try {
             conn = DatabaseConnection.getInstance().getConnection();
             conn.setAutoCommit(false);
+
+            int userIdToDelete = 0;
+            String findUserSql = "SELECT user_id FROM students WHERE id = ?";
+            PreparedStatement findUserStmt = conn.prepareStatement(findUserSql);
+            findUserStmt.setInt(1, selected.getId());
+            ResultSet rsUser = findUserStmt.executeQuery();
+            if (rsUser.next()) {
+                userIdToDelete = rsUser.getInt("user_id");
+            }
 
             String updateRoomSql = "UPDATE rooms SET current_count = current_count - 1 WHERE id = ?";
             PreparedStatement roomStmt = conn.prepareStatement(updateRoomSql);
@@ -391,15 +400,23 @@ public class StaffController {
             delStStmt.setInt(1, selected.getId());
             delStStmt.executeUpdate();
 
+            if (userIdToDelete > 0) {
+                String delUserSql = "DELETE FROM users WHERE id = ?";
+                PreparedStatement delUserStmt = conn.prepareStatement(delUserSql);
+                delUserStmt.setInt(1, userIdToDelete);
+                delUserStmt.executeUpdate();
+            }
+
             conn.commit();
             conn.setAutoCommit(true);
 
             loadAllData();
-            showAlert("Başarılı", "Öğrenci silindi ve oda kontenjanı güncellendi.");
+            showAlert("Başarılı", "Öğrenci ve kullanıcı hesabı tamamen silindi.");
 
         } catch (SQLException e) {
             try { if(conn!=null) conn.rollback(); } catch (SQLException ex) {}
             e.printStackTrace();
+            showAlert("Hata", "Silme işlemi başarısız: " + e.getMessage());
         }
     }
 
