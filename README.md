@@ -57,7 +57,7 @@ Proje, kodun okunabilirliğini ve bakımını kolaylaştırmak için 3 ana katma
 
 | Oda Haritası | Öğrenci Paneli |
 | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/a79c0caf-a032-45f0-96cd-8e087e36a07d" width="400"> | <img src="[screenshots/student.png](https://github.com/user-attachments/assets/3b49fe0d-7b38-427b-8a01-aa51f659d95c)" width="400"> |
+| <img src="https://github.com/user-attachments/assets/a79c0caf-a032-45f0-96cd-8e087e36a07d" width="400"> | <img src="https://github.com/user-attachments/assets/3b49fe0d-7b38-427b-8a01-aa51f659d95c" width="400"> |
 
 *(Not: Görsellerin görünmesi için proje dizininde screenshots adında bir klasör oluşturup ilgili resimleri ekleyiniz.)*
 
